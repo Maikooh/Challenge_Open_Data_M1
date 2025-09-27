@@ -125,47 +125,46 @@ load_table_from_resource_id <- function(resource_id,
     return(suppressMessages(sf::st_read(target, quiet = TRUE)))
   }
 
-  # ZIP (via {archive}, gère les noms accentués)
   if (fmt == "zip") {
-    if (!requireNamespace("archive", quietly = TRUE))
-      stop("Installez le package 'archive' (nécessaire pour lire les ZIP UTF-8).", call. = FALSE)
-    zpath <- if (!is.null(resource_id)) .get_local(target, "zip") else target
+  if (!requireNamespace("archive", quietly = TRUE))
+    stop("Installez le package 'archive' pour lire les ZIP UTF-8.", call. = FALSE)
+  zpath <- if (!is.null(resource_id)) .get_local(target, "zip") else target
 
-    if (!.is_zip_file(zpath)) {
-      message("Avertissement : le serveur n'a pas renvoyé un ZIP. Lecture comme fichier tabulaire.")
-      return(.dgr_read_tabular(zpath, sep = sep, ...))
-    }
-
-    zls <- archive::archive_ls(zpath)
-    if (!nrow(zls)) stop("Le ZIP est vide.", call. = FALSE)
-
-    # Filtrer sur les formats supportés
-    zls$ext <- tolower(tools::file_ext(zls$path))
-    zls_ok <- zls[zls$ext %in% .SUP_FMT, ]
-    if (!nrow(zls_ok)) {
-      exts <- sort(unique(zls$ext))
-      stop(sprintf(
-        "Aucun fichier supporté dans ce ZIP.\nExtensions trouvées: %s\nFormats attendus: %s",
-        paste(exts, collapse=", "), paste(.SUP_FMT, collapse=", ")
-      ), call. = FALSE)
-    }
-
-    # Choisir le plus gros parmi les supportés
-    largest_row <- zls_ok[which.max(zls_ok$size), ]
-    inside <- largest_row$path
-    fmt2 <- largest_row$ext
-    message(sprintf("Info : ZIP multi-fichiers, ouverture du plus gros supporté : %s", basename(inside)))
-
-    td <- tempfile("unz_"); dir.create(td)
-    archive::archive_extract(zpath, files = inside, dir = td)
-    extracted <- file.path(td, inside)
-
-    return(load_table_from_resource_id(
-      NULL, sep = sep, cache_dir = cache_dir,
-      .file_and_format = list(extracted, fmt2), ...
-    ))
+  if (!.is_zip_file(zpath)) {
+    message("Avertissement : le serveur n'a pas renvoyé un ZIP. Lecture comme fichier tabulaire.")
+    return(.dgr_read_tabular(zpath, sep = sep, ...))
   }
 
+  # archive() liste le contenu
+  zls <- archive::archive(zpath)   # data.frame avec columns 'path','size',...
+  if (!nrow(zls)) stop("Le ZIP est vide.", call. = FALSE)
+
+  # Filtrer sur les formats supportés
+  zls$ext <- tolower(tools::file_ext(zls$path))
+  zls_ok <- zls[zls$ext %in% .SUP_FMT, ]
+  if (!nrow(zls_ok)) {
+    exts <- sort(unique(zls$ext))
+    stop(sprintf(
+      "Aucun fichier supporté dans ce ZIP.\nExtensions trouvées: %s\nFormats attendus: %s",
+      paste(exts, collapse=", "), paste(.SUP_FMT, collapse=", ")
+    ), call. = FALSE)
+  }
+
+  # Choisir le plus gros parmi les supportés
+  largest_row <- zls_ok[which.max(zls_ok$size), ]
+  inside <- largest_row$path
+  fmt2 <- largest_row$ext
+  message(sprintf("Info : ZIP multi-fichiers, ouverture du plus gros supporté : %s", basename(inside)))
+
+  td <- tempfile("unz_"); dir.create(td)
+  archive::archive_extract(zpath, files = inside, dir = td)
+  extracted <- file.path(td, inside)
+
+  return(load_table_from_resource_id(
+    NULL, sep = sep, cache_dir = cache_dir,
+    .file_and_format = list(extracted, fmt2), ...
+  ))
+}
   # Parquet
   if (fmt == "parquet") {
     if (!requireNamespace("arrow", quietly = TRUE))
@@ -197,3 +196,4 @@ load_table_from_resource_id <- function(resource_id,
                   })
   out
 }
+
