@@ -1,0 +1,10 @@
+name: rpy
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - geopandas
+  - requests
+  - numpy
+  - pip

@@ -1,0 +1,70 @@
+---
+title: "Démo R + Python (reticulate)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(reticulate)
+# L'.Rprofile du projet force déjà 'rpy'
+# reticulate::use_condaenv("rpy", required = TRUE)
+
+```
+
+```{r}
+
+
+
+py_run_string("
+import urllib.request
+
+url = 'https://raw.githubusercontent.com/Maikooh/Challenge_Open_Data_M1/refs/heads/main/utils.py'
+response = urllib.request.urlopen(url)
+code = response.read().decode('utf-8')
+
+# Exécuter le contenu du script Python
+exec(code, globals())
+")
+
+# installe depuis conda (souvent mieux pour geopandas)
+py_install(c("pandas", "geopandas", "requests"), envname = "rpy", method = "conda")
+```
+
+```{r}
+library(reticulate)
+
+
+py_run_string("
+import urllib.request, types, sys
+
+url = 'https://raw.githubusercontent.com/Maikooh/Challenge_Open_Data_M1/refs/heads/main/utils.py'
+response = urllib.request.urlopen(url)
+code = response.read().decode('utf-8')
+
+utils = types.ModuleType('utils')
+exec(code, utils.__dict__)
+sys.modules['utils'] = utils
+")
+
+```
+
+
+```{python}
+from utils import load_table_from_resource_id
+
+df = load_table_from_resource_id(
+    '935e1dc5-afce-4d45-9fda-47b18f7444e6',
+    sep=';',
+    dtype=str,
+)
+
+df.head()
+```
+
+```{r}
+df_r <- py$df    # conversion implicite en data.frame R
+head(df_r)
+
+```
+
+
+
