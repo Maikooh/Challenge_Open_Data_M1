@@ -1,0 +1,21 @@
+# R
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+.Rcache/
+.Rproj*
+
+# renv (on garde renv.lock, on ignore la librairie binaire)
+renv/library/
+renv/staging/
+
+# Python / conda
+__pycache__/
+.ipynb_checkpoints/
+.env
+.venv
+
+# OS
+.DS_Store
+Thumbs.db
